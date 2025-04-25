@@ -1,15 +1,22 @@
 package com.UserManagement.service;
 
+import com.UserManagement.dto.UserDTO;
 import com.UserManagement.model.User;
 import com.UserManagement.model.UserTask;
 import com.UserManagement.repository.AdminUserRepository;
 import io.jsonwebtoken.Jwt;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.beans.PropertyDescriptor;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AdminUserService {
@@ -140,7 +147,7 @@ public class AdminUserService {
         return userRepository.findByCreatedBy(id);
     }
 
-    public User updateUser(User user, Long adminId, Long id) {
+ /*   public User updateUser(User user, Long adminId, Long id) {
         User updatedUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -193,5 +200,67 @@ public class AdminUserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    /*public User updateUser(UserDTO userDTO, Long adminId, Long id) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!existingUser.getCreatedBy().equals(adminId)) {
+            throw new RuntimeException("This admin does not have access to update this user");
+        }
+
+        // Update allowed fields
+       if (userDTO.getUsername() != null) {
+            existingUser.setUsername(userDTO.getUsername());
+        }
+        if (userDTO.getFirstname() != null) {
+            existingUser.setFirstname(userDTO.getFirstname());
+        }
+        if (userDTO.getLastname() != null) {
+            existingUser.setLastname(userDTO.getLastname());
+        }
+        if (userDTO.getRole() != null) {
+            existingUser.setRole(userDTO.getRole());
+        }
+
+        // Handle password update
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
+
+        return userRepository.save(existingUser);
+    }*/
+    public User updateUser(UserDTO userDTO, Long adminId, Long id) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!existingUser.getCreatedBy().equals(adminId)) {
+            throw new RuntimeException("This admin does not have access to update this user");
+        }
+
+        // Copy non-null fields from DTO to entity
+        BeanUtils.copyProperties(userDTO, existingUser, getNullPropertyNames(userDTO));
+
+        // Handle password encryption if provided
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    public static String[] getNullPropertyNames(Object source) {
+        final BeanWrapper src = new BeanWrapperImpl(source);
+        PropertyDescriptor[] pds = src.getPropertyDescriptors();
+
+        Set<String> emptyNames = new HashSet<>();
+        for (PropertyDescriptor pd : pds) {
+            Object srcValue = src.getPropertyValue(pd.getName());
+            if (srcValue == null) emptyNames.add(pd.getName());
+        }
+        String[] result = new String[emptyNames.size()];
+        return emptyNames.toArray(result);
+    }
+
 
 }
