@@ -123,6 +123,7 @@ public class AuthController {
             return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
         }
     }
+
     @PostMapping("/registerUser")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> registerUser(@RequestBody User user,   @RequestHeader("Authorization") String authHeader) {
