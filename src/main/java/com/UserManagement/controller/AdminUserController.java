@@ -1,5 +1,6 @@
 package com.UserManagement.controller;
 
+import com.UserManagement.dto.UserDTO;
 import com.UserManagement.model.User;
 import com.UserManagement.security.JwtUtil;
 import com.UserManagement.service.AdminUserService;
@@ -31,13 +32,13 @@ public class AdminUserController {
         return ResponseEntity.ok(userService.findByCreatedBy(adminId));
     }
 
-    @PutMapping("/{id}")
+  /*  @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public User updateUser(@RequestBody User user ,@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7); // Removes "Bearer "
         Long adminId = jwtUtil.extractClaim(token, claims -> claims.get("userId", Long.class));
        return userService.updateUser(user, adminId,id);
-    }
+    } */
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -54,6 +55,15 @@ public class AdminUserController {
 
         // 4️⃣ Return response
         return ResponseEntity.ok("✅ User deleted successfully by Admin ID: " + adminId);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<User> updateUser(@RequestBody UserDTO userDTO, @PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7); // Removes "Bearer "
+        Long adminId = jwtUtil.extractClaim(token, claims -> claims.get("userId", Long.class));
+        User updatedUser = userService.updateUser(userDTO, adminId, id);
+        return ResponseEntity.ok(updatedUser);
     }
 
 
