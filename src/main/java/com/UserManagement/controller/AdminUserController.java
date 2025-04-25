@@ -1,5 +1,6 @@
 package com.UserManagement.controller;
 
+import com.UserManagement.dto.UserUpdateRequestDTO;
 import com.UserManagement.model.User;
 import com.UserManagement.security.JwtUtil;
 import com.UserManagement.service.AdminUserService;
@@ -33,10 +34,12 @@ public class AdminUserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public User updateUser(@RequestBody User user ,@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
+    public User updateUser(@RequestBody UserUpdateRequestDTO userDto,
+                           @PathVariable Long id,
+                           @RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7); // Removes "Bearer "
         Long adminId = jwtUtil.extractClaim(token, claims -> claims.get("userId", Long.class));
-       return userService.updateUser(user, adminId,id);
+        return userService.updateUser(userDto, adminId, id);
     }
 
     @DeleteMapping("/{id}")

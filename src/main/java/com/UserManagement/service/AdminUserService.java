@@ -1,15 +1,22 @@
 package com.UserManagement.service;
 
+import com.UserManagement.dto.UserUpdateRequestDTO;
 import com.UserManagement.model.User;
 import com.UserManagement.model.UserTask;
 import com.UserManagement.repository.AdminUserRepository;
 import io.jsonwebtoken.Jwt;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.beans.PropertyDescriptor;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class AdminUserService {
@@ -140,7 +147,7 @@ public class AdminUserService {
         return userRepository.findByCreatedBy(id);
     }
 
-    public User updateUser(User user, Long adminId, Long id) {
+    /*public User updateUser(UserUpdateRequestDTO userDto, Long adminId, Long id) {
         User updatedUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -148,16 +155,44 @@ public class AdminUserService {
             throw new RuntimeException("This admin does not have access to update this user");
         }
 
-        // Update only the allowed fields
-        updatedUser.setFirstname(user.getFirstname());
-        updatedUser.setLastname(user.getLastname());
-        updatedUser.setUsername(user.getUsername());
-        updatedUser.setPassword(user.getPassword());
-        updatedUser.setRole(user.getRole());
-        // You may keep or skip setting createdBy again
+        // Only update fields that are non-null
+        if (userDto.getFirstname() != null) {
+            updatedUser.setFirstname(userDto.getFirstname());
+        }
+        if (userDto.getLastname() != null) {
+            updatedUser.setLastname(userDto.getLastname());
+        }
+        if (userDto.getUsername() != null) {
+            updatedUser.setUsername(userDto.getUsername());
+        }
+        if (userDto.getRole() != null) {
+            updatedUser.setRole(userDto.getRole());
+        }
+        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            updatedUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        }
+
+        return userRepository.save(updatedUser);
+    }*/
+    public User updateUser(UserUpdateRequestDTO userDto, Long adminId, Long id) {
+        User updatedUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!updatedUser.getCreatedBy().equals(adminId)) {
+            throw new RuntimeException("This admin does not have access to update this user");
+        }
+
+        // Copy non-null fields from DTO to entity, excluding password
+        BeanUtils.copyProperties(userDto, updatedUser, getNullPropertyNames(userDto));
+
+        // Encrypt and update password if provided
+        if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            updatedUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        }
 
         return userRepository.save(updatedUser);
     }
+
 
    /* public void deleteUser(Long adminId, Long id) {
         User deleteUser = userRepository.findById(id)
@@ -193,5 +228,18 @@ public class AdminUserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+
+    public static String[] getNullPropertyNames(Object source) {
+        final BeanWrapper src = new BeanWrapperImpl(source);
+        PropertyDescriptor[] pds = src.getPropertyDescriptors();
+
+        Set<String> emptyNames = new HashSet<>();
+        for (PropertyDescriptor pd : pds) {
+            Object srcValue = src.getPropertyValue(pd.getName());
+            if (srcValue == null) emptyNames.add(pd.getName());
+        }
+        return emptyNames.toArray(new String[0]);
+    }
+
 
 }
