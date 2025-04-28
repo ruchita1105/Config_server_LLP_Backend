@@ -24,7 +24,7 @@ public class JwtUtil {
 
     private Key signingKey;
 
-    private static final long ACCESS_TOKEN_VALIDITY =  60 * 1000; // 2 minutes
+    private static final long ACCESS_TOKEN_VALIDITY = 10 * 60 * 1000; // 10 minutes
 
     private static final long REFRESH_TOKEN_VALIDITY = 24 * 60 * 60 * 1000; // 1 day
 
